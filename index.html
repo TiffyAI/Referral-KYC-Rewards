@@ -1,134 +1,173 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>TiffyAI Trust Portal</title>
+  <meta charset="UTF-8" />
+  <title>TiffyAI Trust & Referral</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
     body {
-      background: linear-gradient(120deg, #000010, #0a0020);
-      color: #00f0ff;
       font-family: 'Orbitron', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
+      background: url('MintBadgePlaceholder.jpg') no-repeat center center/cover;
+      color: #00f0ff;
       margin: 0;
       padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .glass {
+      background: rgba(0, 0, 20, 0.7);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 2rem;
+      max-width: 600px;
+      width: 90%;
       text-align: center;
+      box-shadow: 0 0 25px #00f0ff;
     }
 
     h1 {
       font-size: 2rem;
       margin-bottom: 1rem;
-      color: #ffffff;
       text-shadow: 0 0 10px #00f0ff;
     }
 
-    p {
+    .stats {
       font-size: 1.2rem;
-      margin: 0.3rem 0;
+      margin: 0.8rem 0;
     }
 
-    #trustStatus {
-      font-weight: bold;
-      text-shadow: 0 0 5px;
+    #trustScore {
+      font-size: 1.6rem;
+      margin-bottom: 1rem;
+      color: #ffffff;
     }
 
     .locked {
       color: red;
-      text-shadow: 0 0 8px red;
+      text-shadow: 0 0 10px red;
     }
 
-    button {
-      margin: 1rem;
-      padding: 12px 24px;
-      font-size: 1rem;
-      background: #0a0a2a;
-      color: #00f0ff;
+    .unlocked {
+      color: #00ff88;
+      text-shadow: 0 0 10px #00ff88;
+    }
+
+    button, input[type="file"] {
+      background: transparent;
       border: 2px solid #00f0ff;
-      border-radius: 10px;
+      color: #00f0ff;
+      padding: 10px 20px;
+      margin: 0.4rem;
+      font-size: 1rem;
+      border-radius: 12px;
       cursor: pointer;
-      box-shadow: 0 0 10px #00f0ff;
-      transition: 0.2s ease;
+      transition: 0.3s ease;
+      font-family: 'Orbitron', sans-serif;
     }
 
-    button:hover {
-      background: #000010;
-      transform: scale(1.05);
+    button:hover, input[type="file"]:hover {
+      background: #00f0ff;
+      color: #000;
+      box-shadow: 0 0 15px #00f0ff;
     }
 
     input[type="file"] {
-      margin-top: 10px;
+      padding: 8px;
+    }
+
+    hr {
+      border: none;
+      height: 1px;
+      background: #00f0ff44;
+      margin: 2rem 0;
+    }
+
+    #importStatus {
+      margin-top: 1rem;
+      font-size: 0.9rem;
     }
   </style>
-
-  <!-- Optional: Google Orbitron font -->
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <h1>TiffyAI Trust Portal</h1>
-  <p>Trust Score: <span id="scoreValue">0</span>%</p>
-  <p id="trustStatus">Checking trust...</p>
+  <div class="glass">
+    <h1>TiffyAI Trust & Referral</h1>
 
-  <button id="claimAndBackupBtn">🔐 Claim Blue Key & Backup</button>
-  <input type="file" id="importInput" accept=".json" />
+    <div id="trustScore">Trust Score: <span id="scoreValue">0</span>%</div>
+    <div class="stats" id="blueKeys">🔵 Blue Keys: 0</div>
+    <div class="stats" id="goldKeys">🥇 Gold Keys: 0</div>
+    <div class="stats" id="shares">📣 Shares: 0</div>
+    <div class="stats locked" id="trustStatus">⚠️ Your device is not yet trusted</div>
+
+    <button onclick="handleShare()">📣 Share Referral Link</button>
+    <button onclick="addBlueKey()">🔐 Claim Blue Key</button>
+
+    <hr />
+
+    <button onclick="exportTrustToFile()">📁 Backup Trust File</button>
+    <input type="file" onchange="importFile(event)" />
+
+    <div id="importStatus"></div>
+  </div>
 
   <script type="module">
     import {
       getTrustData,
-      claimBlueKey,
-      saveBackup,
-      importBackup
+      saveTrustData,
+      addBlueKey,
+      addShare,
+      exportTrustToFile,
+      importTrustFromFile
     } from './trust.js';
-
-    const claimBtn = document.getElementById('claimAndBackupBtn');
-    const importInput = document.getElementById('importInput');
 
     function updateUI() {
       const data = getTrustData();
-      const score = data.trustScore || 0;
-      document.getElementById('scoreValue').innerText = score.toFixed(0);
+
+      document.getElementById('scoreValue').innerText = data.trustScore;
+      document.getElementById('blueKeys').innerText = `🔵 Blue Keys: ${data.blueKeys}`;
+      document.getElementById('goldKeys').innerText = `🥇 Gold Keys: ${data.goldKeys}`;
+      document.getElementById('shares').innerText = `📣 Shares: ${data.shares}`;
 
       const status = document.getElementById('trustStatus');
-      if (score >= 50) {
+      if (data.trustScore >= 50) {
         status.innerText = '✅ Device Trusted';
         status.classList.remove('locked');
+        status.classList.add('unlocked');
       } else {
         status.innerText = '⚠️ Your device is not yet trusted';
         status.classList.add('locked');
+        status.classList.remove('unlocked');
       }
     }
 
-    claimBtn.addEventListener('click', () => {
-      const last = parseInt(localStorage.getItem('lastClaim') || 0);
-      const now = Date.now();
-      const hoursPassed = (now - last) / 1000 / 60 / 60;
-
-      if (hoursPassed < 24) {
-        alert('⏳ You can only claim 1 Blue Key per 24 hours.');
-        return;
-      }
-
-      claimBlueKey();
-      localStorage.setItem('lastClaim', now.toString());
-
-      const data = getTrustData();
-      saveBackup(data);
+    window.addBlueKey = () => {
+      addBlueKey();
       updateUI();
-    });
+    };
 
-    importInput.addEventListener('change', (e) => {
+    window.handleShare = () => {
+      addShare();
+      updateUI();
+      const refCode = Math.random().toString(36).substring(7);
+      const shareURL = window.location.href.split('?')[0] + '?ref=' + refCode;
+      window.open(`https://twitter.com/intent/tweet?text=Join%20TiffyAI!%20Use%20my%20referral%20link:%20${encodeURIComponent(shareURL)}`, '_blank');
+    };
+
+    window.exportTrustToFile = exportTrustToFile;
+
+    window.importFile = (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const encryptedData = e.target.result;
-        importBackup(encryptedData);
+
+      importTrustFromFile(file, (success) => {
+        document.getElementById('importStatus').innerText = success ? '✅ Trust file loaded!' : '❌ Invalid or corrupted file.';
         updateUI();
-      };
-      reader.readAsText(file);
-    });
+      });
+    };
 
     updateUI();
   </script>
