@@ -2,35 +2,74 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>TiffyAI Trust Score</title>
+  <title>TiffyAI Trust Portal</title>
   <style>
     body {
-      background: #000;
-      color: #0f0;
-      font-family: monospace;
+      background: linear-gradient(120deg, #000010, #0a0020);
+      color: #00f0ff;
+      font-family: 'Orbitron', sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100vh;
+      margin: 0;
+      padding: 0;
+      text-align: center;
     }
-    button {
-      padding: 10px 20px;
-      background: #111;
-      color: #0f0;
-      border: 1px solid #0f0;
-      margin: 10px;
-      cursor: pointer;
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: #ffffff;
+      text-shadow: 0 0 10px #00f0ff;
     }
+
+    p {
+      font-size: 1.2rem;
+      margin: 0.3rem 0;
+    }
+
+    #trustStatus {
+      font-weight: bold;
+      text-shadow: 0 0 5px;
+    }
+
     .locked {
       color: red;
+      text-shadow: 0 0 8px red;
+    }
+
+    button {
+      margin: 1rem;
+      padding: 12px 24px;
+      font-size: 1rem;
+      background: #0a0a2a;
+      color: #00f0ff;
+      border: 2px solid #00f0ff;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #00f0ff;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      background: #000010;
+      transform: scale(1.05);
+    }
+
+    input[type="file"] {
+      margin-top: 10px;
     }
   </style>
+
+  <!-- Optional: Google Orbitron font -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <h1>TiffyAI Trust System</h1>
+  <h1>TiffyAI Trust Portal</h1>
   <p>Trust Score: <span id="scoreValue">0</span>%</p>
-  <p id="trustStatus"></p>
+  <p id="trustStatus">Checking trust...</p>
 
   <button id="claimAndBackupBtn">🔐 Claim Blue Key & Backup</button>
   <input type="file" id="importInput" accept=".json" />
@@ -46,6 +85,21 @@
     const claimBtn = document.getElementById('claimAndBackupBtn');
     const importInput = document.getElementById('importInput');
 
+    function updateUI() {
+      const data = getTrustData();
+      const score = data.trustScore || 0;
+      document.getElementById('scoreValue').innerText = score.toFixed(0);
+
+      const status = document.getElementById('trustStatus');
+      if (score >= 50) {
+        status.innerText = '✅ Device Trusted';
+        status.classList.remove('locked');
+      } else {
+        status.innerText = '⚠️ Your device is not yet trusted';
+        status.classList.add('locked');
+      }
+    }
+
     claimBtn.addEventListener('click', () => {
       const last = parseInt(localStorage.getItem('lastClaim') || 0);
       const now = Date.now();
@@ -58,11 +112,10 @@
 
       claimBlueKey();
       localStorage.setItem('lastClaim', now.toString());
-      updateUI();
 
-      // Save automatic backup
       const data = getTrustData();
       saveBackup(data);
+      updateUI();
     });
 
     importInput.addEventListener('change', (e) => {
@@ -76,20 +129,6 @@
       };
       reader.readAsText(file);
     });
-
-    function updateUI() {
-      const data = getTrustData();
-      document.getElementById('scoreValue').innerText = data.trustScore;
-
-      const status = document.getElementById('trustStatus');
-      if (data.trustScore >= 50) {
-        status.innerText = '✅ Device Trusted';
-        status.classList.remove('locked');
-      } else {
-        status.innerText = '⚠️ Your device is not yet trusted';
-        status.classList.add('locked');
-      }
-    }
 
     updateUI();
   </script>
